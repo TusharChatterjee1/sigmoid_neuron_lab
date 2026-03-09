@@ -77,6 +77,8 @@ def set_up_weights(num_features):
 
 def sigmoid(path, learning_rate, epochs, label):
     x, y, feature_names, label_name = load_csv(path)
+    folder_name = os.path.splitext(os.path.basename(path))[0]
+    os.makedirs(folder_name, exist_ok=True)
     x_train, y_train, x_test, y_test = train_test_split(x, y, test_ratio=0.3, seed_value=75)
 
     #Beginning values for weights and bias
@@ -127,7 +129,7 @@ def sigmoid(path, learning_rate, epochs, label):
                 all_changes.append(change_value)
         max_weight_change_history.append(max(all_changes))
 
-    show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, path)
+    show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, folder_name)
 
 def update(frame, history, ax, line):
         weights, bias = history[frame]
@@ -145,7 +147,7 @@ def update(frame, history, ax, line):
 
         return line,
 
-def animate_decision_boundary(X, y, history, Dataset):
+def animate_decision_boundary(X, y, history, output_folder):
     features = np.array(X)
     labels = np.array(y)
 
@@ -236,10 +238,10 @@ def animate_decision_boundary(X, y, history, Dataset):
         )]
     )
 
-    fig.write_html('index.html')
+    fig.write_html(os.path.join(output_folder, 'decision_boundary.html'))
     print("Saved decision_boundary.html — right-click the file and select 'Open with Live Server' or open in a browser.")
 
-def plot_loss_over_epochs(loss_history):
+def plot_loss_over_epochs(loss_history, output_folder):
     epochs = range(1, len(loss_history) + 1)
 
     plt.figure(figsize=(8, 5))
@@ -248,11 +250,11 @@ def plot_loss_over_epochs(loss_history):
     plt.ylabel("BCE Loss")
     plt.title("Loss Over Epochs")
     plt.legend()
-    plt.savefig('loss.png')
+    plt.savefig(os.path.join(output_folder, 'loss.png'))
     plt.close()
     print("Saved loss.png — open it in the file explorer to view.")
 
-def plot_weight_change_over_epochs(max_weight_change_history):
+def plot_weight_change_over_epochs(max_weight_change_history, output_folder):
     epochs = range(1, len(max_weight_change_history) + 1)
 
     plt.figure(figsize=(8, 5))
@@ -261,11 +263,11 @@ def plot_weight_change_over_epochs(max_weight_change_history):
     plt.ylabel("Max Absolute Weight Change")
     plt.title("Weight Change Over Epochs")
     plt.legend()
-    plt.savefig('weight_change.png')
+    plt.savefig(os.path.join(output_folder, 'weight_change.png'))
     plt.close()
     print("Saved weight_change.png — open it in the file explorer to view.")
 
-def show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, dataset):
+def show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, output_folder):
     print("\n--- Graph Selection ---")
     print("1. Decision Boundary (animated)")
     print("2. Loss Over Epochs")
@@ -276,21 +278,21 @@ def show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_c
 
     if choice == "1":
         if num_features == 2:
-            animate_decision_boundary(x_train, y_train, weight_history, dataset)
+            animate_decision_boundary(x_train, y_train, weight_history, output_folder)
         else:
             print("Decision boundary only available for 2 features.")
-        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, dataset)
+        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, output_folder)
     elif choice == "2":
-        plot_loss_over_epochs(loss_history)
-        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, dataset)
+        plot_loss_over_epochs(loss_history, output_folder)
+        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, output_folder)
     elif choice == "3":
-        plot_weight_change_over_epochs(max_weight_change_history)
-        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, dataset)
+        plot_weight_change_over_epochs(max_weight_change_history, output_folder)
+        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, output_folder)
     elif choice == "4":
         main()
     else:
         print("Invalid choice. Please enter 1, 2, 3, or 4.")
-        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, dataset)
+        show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, output_folder)
 
 def pickPath():
     print("Please select a dataset:")

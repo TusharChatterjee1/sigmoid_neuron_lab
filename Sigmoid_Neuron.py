@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
 from matplotlib.widgets import Button
+import plotly.graph_objects as go
 
 
 def load_csv(path):
@@ -148,58 +149,95 @@ def animate_decision_boundary(X, y, history):
     features = np.array(X)
     labels = np.array(y)
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    x_min = features[:, 0].min() - 1
+    x_max = features[:, 0].max() + 1
+    y_min = features[:, 1].min() - 1
+    y_max = features[:, 1].max() + 1
 
-    # Plot points
-    label = 0
-    is_Zero = []
-    is_One = []
-    for value in labels:
-        if value == label:
-            is_Zero.append(True)
-            is_One.append(False)
+    # Separate class 0 and class 1 points
+    is_Zero = [v == 0 for v in labels]
+    is_One = [v == 1 for v in labels]
+
+    # Sample every 10th frame
+    sampled_history = history[::10]
+
+    # Build one frame per entry in sampled history
+    frames = []
+    for i, (weights, bias) in enumerate(sampled_history):
+        w1, w2 = weights
+        if w2 != 0:
+            x_vals = [x_min, x_max]
+            y_vals = [-(w1 * x + bias) / w2 for x in x_vals]
+        elif w1 != 0:
+            x_vals = [-bias / w1, -bias / w1]
+            y_vals = [y_min, y_max]
         else:
-            is_Zero.append(False)
-            is_One.append(True)
+            x_vals = []
+            y_vals = []
 
-    #plot the 0 points
-    ax.scatter(
-        features[is_Zero, 0],
-        features[is_Zero, 1],
-        c='red',
-        label="Class 0",
-        edgecolors='k'
+        frames.append(go.Frame(
+            data=[
+                go.Scatter(x=features[is_Zero, 0], y=features[is_Zero, 1],
+                           mode='markers', marker=dict(color='red', line=dict(color='black', width=1)),
+                           name='Class 0'),
+                go.Scatter(x=features[is_One, 0], y=features[is_One, 1],
+                           mode='markers', marker=dict(color='green', line=dict(color='black', width=1)),
+                           name='Class 1'),
+                go.Scatter(x=x_vals, y=y_vals,
+                           mode='lines', line=dict(color='black', dash='dash', width=2),
+                           name='Decision Boundary')
+            ],
+            name=str(i)
+        ))
+
+    # Initial frame
+    w1, w2 = sampled_history[0][0]
+    bias0 = sampled_history[0][1]
+    if w2 != 0:
+        x_vals0 = [x_min, x_max]
+        y_vals0 = [-(w1 * x + bias0) / w2 for x in x_vals0]
+    else:
+        x_vals0 = []
+        y_vals0 = []
+
+    fig = go.Figure(
+        data=[
+            go.Scatter(x=features[is_Zero, 0], y=features[is_Zero, 1],
+                       mode='markers', marker=dict(color='red', line=dict(color='black', width=1)),
+                       name='Class 0'),
+            go.Scatter(x=features[is_One, 0], y=features[is_One, 1],
+                       mode='markers', marker=dict(color='green', line=dict(color='black', width=1)),
+                       name='Class 1'),
+            go.Scatter(x=x_vals0, y=y_vals0,
+                       mode='lines', line=dict(color='black', dash='dash', width=2),
+                       name='Decision Boundary')
+        ],
+        frames=frames
     )
-    #plot the 1 points
-    ax.scatter(
-        features[is_One, 0],
-        features[is_One, 1],
-        c='green',
-        label="Class 1",
-        edgecolors='k'
+
+    fig.update_layout(
+        title='Perceptron Decision Boundary (After Each Update)',
+        xaxis=dict(range=[x_min, x_max], title='Feature 1'),
+        yaxis=dict(range=[y_min, y_max], title='Feature 2'),
+        updatemenus=[dict(
+            type='buttons',
+            showactive=False,
+            buttons=[
+                dict(label='Play', method='animate',
+                     args=[None, dict(frame=dict(duration=50, redraw=True), fromcurrent=True)]),
+                dict(label='Pause', method='animate',
+                     args=[[None], dict(frame=dict(duration=0, redraw=False), mode='immediate')])
+            ]
+        )],
+        sliders=[dict(
+            steps=[dict(method='animate', args=[[str(i)], dict(mode='immediate')], label=str(i))
+                   for i in range(len(frames))],
+            currentvalue=dict(prefix='Frame: ')
+        )]
     )
 
-    line, = ax.plot([], [], 'k--', lw=2)
-
-    ax.set_xlim(features[:, 0].min() - 1, features[:, 0].max() + 1)
-    ax.set_ylim(features[:, 1].min() - 1, features[:, 1].max() + 1)
-    ax.set_xlabel("Feature 1")
-    ax.set_ylabel("Feature 2")
-    ax.set_title("Perceptron Decision Boundary (After Each Update)")
-    ax.legend()
-
-    ani = FuncAnimation(
-        fig,
-        update,
-        frames=len(history),
-        fargs=(history, ax, line),
-        interval=1,
-        repeat=False
-    )
-    history = history[::10000]
-    ani.save('decision_boundary.mp4', writer='ffmpeg', fps=30)
-    plt.close()
-    print("Saved decision_boundary.gif — open it in the file explorer to view.")
+    fig.write_html('index.html')
+    print("Saved decision_boundary.html — right-click the file and select 'Open with Live Server' or open in a browser.")
 
 def plot_loss_over_epochs(loss_history):
     epochs = range(1, len(loss_history) + 1)

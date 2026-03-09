@@ -1,14 +1,15 @@
 {
     "name": "Sigmoid Neuron Explorer",
     "image": "mcr.microsoft.com/devcontainers/python:3.11",
-    "postCreateCommand": "pip install numpy matplotlib",
+    "postCreateCommand": "pip install pillow",
     "customizations": {
         "vscode": {
             "extensions": [
                 "ms-python.python"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python"
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.interpreter.infoVisibility": "always"
             }
         }
     }

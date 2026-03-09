@@ -1,7 +1,7 @@
 {
     "name": "Sigmoid Neuron Explorer",
     "image": "mcr.microsoft.com/devcontainers/python:3.11",
-    "postCreateCommand": "pip install numpy matplotlib ipywidgets jupyter",
+    "postCreateCommand": "pip install ipywidgets ipykernel && python -m ipykernel install --user --name python3 --display-name 'Python 3 (ipykernel)'",
     "customizations": {
         "vscode": {
             "extensions": [

@@ -316,7 +316,7 @@ def pickPath():
         return "dataset5.csv"
     elif choice == "6":
         return "dataset6.csv"
-    elif choice == 7"
+    elif choice == "7":
         print("Bye!")
         return "7"
     else:
@@ -326,7 +326,7 @@ def pickPath():
 def main():
     path = pickPath()
     if(path != "7"):
-        learning_rate = 0.01  # Update with your desired learning rate
+        learning_rate = 0.1  # Update with your desired learning rate
         epochs = 1000 # Update with your desired number of epochs
 
         sigmoid(path, learning_rate, epochs, label="label")

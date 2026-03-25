@@ -38,24 +38,32 @@ def get_data_list(data, indexes):
         lst.append(data[i])
     return lst
 
-def train_test_split(features, labels, test_ratio, seed_value):
+def train_test_split(features, labels, test_ratio, val_ratio, seed_value):
     index = []
     length = len(features)
     for i in range(length):
         index.append(i)
     seed = random.Random(seed_value)
     seed.shuffle(index)
-    cut = int(length * (1 - test_ratio))
-    train_index = index[:cut]
-    test_index = index[cut:]
+   
+    test_cut = int(length * (1 - test_ratio))
+    val_cut = int(length * (1 - test_ratio - val_ratio))
+   
+    train_index = index[:val_cut]
+    val_index = index[val_cut:test_cut]
+    test_index = index[test_cut:]
+   
     features_train = get_data_list(features, train_index)
     labels_train = get_data_list(labels, train_index)
+    features_val = get_data_list(features, val_index)
+    labels_val = get_data_list(labels, val_index)
     features_test = get_data_list(features, test_index)
     labels_test = get_data_list(labels, test_index)
-    return features_train, labels_train, features_test, labels_test
+   
+    return features_train, labels_train, features_val, labels_val, features_test, labels_test
 
 def activation_function(z):
-    prediction = 1/(1 + np.exp(-z))
+    prediction = 1/(1 + np.exp(-z)) #Here I changed the formula for prediction to change into signmoid
     return prediction
 
 def dot_product_one_vector(features_row, weights, bias):
@@ -79,15 +87,21 @@ def sigmoid(path, learning_rate, epochs, label):
     x, y, feature_names, label_name = load_csv(path)
     folder_name = os.path.splitext(os.path.basename(path))[0]
     os.makedirs(folder_name, exist_ok=True)
-    x_train, y_train, x_test, y_test = train_test_split(x, y, test_ratio=0.3, seed_value=75)
+   
+    # CHANGE 1: updated split call
+    x_train, y_train, x_val, y_val, x_test, y_test = train_test_split(x, y, test_ratio=0.2, val_ratio=0.2, seed_value=75)
 
-    #Beginning values for weights and bias
     num_features = len(x_train[0])
     weights = set_up_weights(num_features)
     bias = 0.0
     weight_history = []
     loss_history = []
-    max_weight_change_history = []  
+    max_weight_change_history = []
+
+    # CHANGE 2: early stopping variables added before the loop
+    best_val_loss = float('inf')
+    patience = 10
+    epochs_no_improve = 0
 
     for epoch in range(epochs):
         weightChangeList = []
@@ -97,18 +111,15 @@ def sigmoid(path, learning_rate, epochs, label):
             features_row = x_train[i]
             true_label = y_train[i]
             pred_label = predict_one_vector(features_row, weights, bias)
-            # Update each weight
             for j in range(num_features):
                 change_in_weights = learning_rate * (pred_label - true_label) * features_row[j]
                 weightChangeList[i].append(abs(change_in_weights))
                 weights[j] = weights[j] - change_in_weights
-                
-            # Update bias
             change_in_bias = learning_rate * (pred_label - true_label)
             weightChangeList[i].append(abs(change_in_bias))
             bias -= change_in_bias
-
             weight_history.append((weights.copy(), bias))
+
         for k in range(len(x_train)):
             features_row = x_train[k]
             true_label = y_train[k]
@@ -120,7 +131,6 @@ def sigmoid(path, learning_rate, epochs, label):
                 error = -1 * np.log(1 - pred_label)
                 lossList.append(error)
 
-        # Compute epoch-level summaries for plotting
         epoch_bce = sum(lossList) / len(lossList)
         loss_history.append(epoch_bce)
         all_changes = []
@@ -129,8 +139,26 @@ def sigmoid(path, learning_rate, epochs, label):
                 all_changes.append(change_value)
         max_weight_change_history.append(max(all_changes))
 
-    show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, folder_name)
+        # CHANGE 3: early stopping check at the bottom of the loop
+        val_loss_list = []
+        for k in range(len(x_val)):
+            pred = predict_one_vector(x_val[k], weights, bias)
+            if y_val[k] == 1:
+                val_loss_list.append(-1 * np.log(pred))
+            else:
+                val_loss_list.append(-1 * np.log(1 - pred))
+        val_loss = sum(val_loss_list) / len(val_loss_list)
 
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= patience:
+                print(f"Early stopping at epoch {epoch + 1}")
+                break
+
+    show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, folder_name)
 def update(frame, history, ax, line):
         weights, bias = history[frame]
         w1, w2 = weights
@@ -326,7 +354,7 @@ def pickPath():
 def main():
     path = pickPath()
     if(path != "7"):
-        learning_rate = 0.1  # Update with your desired learning rate
+        learning_rate = 10  # Update with your desired learning rate
         epochs = 1000 # Update with your desired number of epochs
 
         sigmoid(path, learning_rate, epochs, label="label")

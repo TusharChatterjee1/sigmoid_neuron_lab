@@ -99,7 +99,6 @@ def sigmoid(path, learning_rate, epochs, label):
     max_weight_change_history = []
 
     # CHANGE 2: early stopping variables added before the loop
-    best_val_loss = float('inf')
     patience = 10
     epochs_no_improve = 0
 
@@ -140,23 +139,13 @@ def sigmoid(path, learning_rate, epochs, label):
         max_weight_change_history.append(max(all_changes))
 
         # CHANGE 3: early stopping check at the bottom of the loop
-        val_loss_list = []
-        for k in range(len(x_val)):
-            pred = predict_one_vector(x_val[k], weights, bias)
-            if y_val[k] == 1:
-                val_loss_list.append(-1 * np.log(pred))
-            else:
-                val_loss_list.append(-1 * np.log(1 - pred))
-        val_loss = sum(val_loss_list) / len(val_loss_list)
-
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            epochs_no_improve = 0
-        else:
-            epochs_no_improve += 1
-            if epochs_no_improve >= patience:
+        if epoch_bce < 0.1 and max_weight_change_history[-1] < 0.01:
+            consecutive_count += 1
+            if consecutive_count >= patience:
                 print(f"Early stopping at epoch {epoch + 1}")
                 break
+        else:
+            consecutive_count = 0
 
     show_graph_menu(x_train, y_train, weight_history, loss_history, max_weight_change_history, num_features, folder_name)
 def update(frame, history, ax, line):
@@ -354,7 +343,7 @@ def pickPath():
 def main():
     path = pickPath()
     if(path != "7"):
-        learning_rate = 10  # Update with your desired learning rate
+        learning_rate = 0.1  # Update with your desired learning rate
         epochs = 1000 # Update with your desired number of epochs
 
         sigmoid(path, learning_rate, epochs, label="label")

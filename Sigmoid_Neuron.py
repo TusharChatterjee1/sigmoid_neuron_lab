@@ -343,7 +343,7 @@ def pickPath():
 def main():
     path = pickPath()
     if(path != "7"):
-        learning_rate = 0.1  # Update with your desired learning rate
+        learning_rate = 0.01  # Update with your desired learning rate
         epochs = 1000 # Update with your desired number of epochs
 
         sigmoid(path, learning_rate, epochs, label="label")
